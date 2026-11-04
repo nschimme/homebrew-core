@@ -5,13 +5,7 @@ class Faad2 < Formula
   sha256 "ee479ccbae4a8387ab696e6f21a481bd83fe3881471cafa81b4ae59d7d3aed43"
   license "GPL-2.0-or-later"
   compatibility_version 1
-  head do
-    url "https://github.com/FreewareAdvancedAudio/faad2.git", branch: "master"
-
-    resource "faac" do
-      url "https://github.com/FreewareAdvancedAudio/faac.git", branch: "master"
-    end
-  end
+  head "https://github.com/FreewareAdvancedAudio/faad2.git", branch: "master"
 
   bottle do
     sha256 cellar: :any, arm64_golden_gate: "15d889dc25b77a061642b62d94aafae9989197babc254580666e400ce25fb485"
@@ -28,10 +22,7 @@ class Faad2 < Formula
 
   def install
     args = []
-    if build.head?
-      resource("faac").stage(buildpath/"external/faac")
-      args << "-DFAAD3_USE_BUNDLED_SOURCE=ON"
-    end
+    args << "-DFAAD3_USE_BUNDLED_SOURCE=ON" if build.head?
 
     system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
     system "cmake", "--build", "build"
