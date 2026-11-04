@@ -28,11 +28,14 @@ class Faac < Formula
   end
 
   test do
-    system bin/"faac", test_fixtures("test.wav"), "-o", "test.m4a"
+    cp test_fixtures("test.wav"), testpath/"test.wav"
+    system bin/"faac", "test.wav", "-o", "test.m4a"
     assert_path_exists testpath/"test.m4a"
 
     if build.head?
-      system bin/"faad", "-i", test_fixtures("test.m4a")
+      system bin/"faad", "-i", "test.m4a"
+      system bin/"faad", "-o", "out.wav", "test.m4a"
+      assert_path_exists testpath/"out.wav"
 
       (testpath/"test.c").write <<~C
         #include <faad3.h>
