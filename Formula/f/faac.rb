@@ -1,11 +1,13 @@
 class Faac < Formula
-  desc "ISO AAC audio encoder"
+  desc "ISO AAC audio encoder and decoder suite with MP4 muxer and resampler"
   homepage "https://freewareadvancedaudio.github.io"
   url "https://github.com/FreewareAdvancedAudio/faac/archive/refs/tags/faac-2.2.tar.gz"
   sha256 "a93963573907c83e26e8cfabbf80d3a9c360f06ea4ecf1ea6cb74a202494d8d9"
   license "LGPL-2.1-or-later"
   compatibility_version 3
   head "https://github.com/FreewareAdvancedAudio/faac.git", branch: "master"
+
+  link_overwrite "bin/faad", "share/man/man1/faad.1"
 
   bottle do
     sha256 cellar: :any, arm64_golden_gate: "73cdcc4e8d2070975401d05242081e54c6b1f08e30e07c1a994177367af07342"
@@ -25,7 +27,30 @@ class Faac < Formula
   end
 
   test do
-    system bin/"faac", test_fixtures("test.mp3"), "-P", "-o", "test.m4a"
+    cp test_fixtures("test.wav"), testpath/"test.wav"
+    output = shell_output("#{bin}/faac test.wav -o test.m4a 2>&1")
+    assert_match "Freeware Advanced Audio", output
     assert_path_exists testpath/"test.m4a"
+
+    if build.head?
+      head_output = shell_output("#{bin}/faac -v2 test.wav -o test2.m4a 2>&1")
+      assert_match "Encode Summary", head_output
+      assert_path_exists testpath/"test2.m4a"
+      info = shell_output("#{bin}/faad -i test.m4a 2>&1")
+      assert_match "LC AAC", info
+
+      decode_output = shell_output("#{bin}/faad -v2 -o out.wav test.m4a 2>&1")
+      assert_match "Decode Summary", decode_output
+      assert_path_exists testpath/"out.wav"
+
+      faam_output = shell_output("#{bin}/faam info test.m4a")
+      assert_match "ISO BMFF", faam_output
+      assert_match "AAC-LC", faam_output
+
+      faar_output = shell_output("#{bin}/faar -r 48000 -v2 test.wav resampled.wav 2>&1")
+      assert_match "Freeware Advanced Audio Resampler", faar_output
+      assert_match "Completed:", faar_output
+      assert_path_exists testpath/"resampled.wav"
+    end
   end
 end

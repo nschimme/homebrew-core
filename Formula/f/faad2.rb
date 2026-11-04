@@ -1,10 +1,15 @@
 class Faad2 < Formula
-  desc "ISO AAC audio decoder"
+  desc "ISO AAC audio decoder compatibility shim"
   homepage "https://freewareadvancedaudio.github.io"
   url "https://github.com/FreewareAdvancedAudio/faad2/archive/refs/tags/2.11.4.tar.gz"
   sha256 "ee479ccbae4a8387ab696e6f21a481bd83fe3881471cafa81b4ae59d7d3aed43"
   license "GPL-2.0-or-later"
   compatibility_version 1
+  head do
+    url "https://github.com/FreewareAdvancedAudio/faad2.git", branch: "master"
+
+    depends_on "faac"
+  end
 
   bottle do
     sha256 cellar: :any, arm64_golden_gate: "15d889dc25b77a061642b62d94aafae9989197babc254580666e400ce25fb485"
@@ -15,6 +20,7 @@ class Faad2 < Formula
   end
 
   depends_on "cmake" => :build
+  depends_on "pkgconf" => [:build, :test]
 
   deny_network_access!
 
@@ -24,8 +30,19 @@ class Faad2 < Formula
     system "cmake", "--install", "build"
   end
 
+  def caveats
+    <<~EOS
+      The `faad` command-line tool is now provided by the `faac` formula.
+    EOS
+  end
+
   test do
-    output = shell_output("#{bin}/faad -i #{test_fixtures("test.m4a")} 2>&1")
-    assert_match "LC AAC\t0.192 secs, 1 ch, 8000 Hz", output
+    if File.exist?(bin/"faad")
+      output = shell_output("#{bin}/faad -i #{test_fixtures("test.m4a")} 2>&1")
+      assert_match "LC AAC\t0.192 secs, 1 ch, 8000 Hz", output
+    else
+      ENV.prepend_path "PKG_CONFIG_PATH", lib/"pkgconfig"
+      assert_match "-lfaad", shell_output("pkgconf --libs faad2")
+    end
   end
 end
