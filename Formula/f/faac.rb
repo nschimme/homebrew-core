@@ -1,11 +1,13 @@
 class Faac < Formula
-  desc "ISO AAC audio encoder"
+  desc "ISO AAC audio encoder and decoder suite with MP4 muxer and resampler"
   homepage "https://freewareadvancedaudio.github.io"
   url "https://github.com/FreewareAdvancedAudio/faac/archive/refs/tags/faac-2.2.tar.gz"
   sha256 "a93963573907c83e26e8cfabbf80d3a9c360f06ea4ecf1ea6cb74a202494d8d9"
   license "LGPL-2.1-or-later"
   compatibility_version 3
   head "https://github.com/FreewareAdvancedAudio/faac.git", branch: "master"
+
+  link_overwrite "bin/faad", "share/man/man1/faad.1"
 
   bottle do
     sha256 cellar: :any, arm64_golden_gate: "73cdcc4e8d2070975401d05242081e54c6b1f08e30e07c1a994177367af07342"
@@ -27,5 +29,25 @@ class Faac < Formula
   test do
     system bin/"faac", test_fixtures("test.mp3"), "-P", "-o", "test.m4a"
     assert_path_exists testpath/"test.m4a"
+
+    if build.head?
+      system bin/"faad", "-i", test_fixtures("test.m4a")
+
+      (testpath/"test.c").write <<~C
+        #include <faad3.h>
+        int main() {
+          faad_config cfg;
+          faad_decoder *dec = NULL;
+          faad_status st = faad_config_init(&cfg, sizeof(cfg));
+          if (st != FAAD_OK) return 1;
+          st = faad_decoder_open(&cfg, NULL, 0, &dec);
+          if (st != FAAD_OK) return 1;
+          faad_decoder_close(&dec);
+          return 0;
+        }
+      C
+      system ENV.cc, "test.c", "-I#{include}", "-L#{lib}", "-lfaad3", "-o", "test"
+      system "./test"
+    end
   end
 end

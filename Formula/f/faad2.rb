@@ -1,10 +1,11 @@
 class Faad2 < Formula
-  desc "ISO AAC audio decoder"
+  desc "ISO AAC audio decoder compatibility shim"
   homepage "https://freewareadvancedaudio.github.io"
   url "https://github.com/FreewareAdvancedAudio/faad2/archive/refs/tags/2.11.4.tar.gz"
   sha256 "ee479ccbae4a8387ab696e6f21a481bd83fe3881471cafa81b4ae59d7d3aed43"
   license "GPL-2.0-or-later"
   compatibility_version 1
+  head "https://github.com/FreewareAdvancedAudio/faad2.git", branch: "master"
 
   bottle do
     sha256 cellar: :any, arm64_golden_gate: "15d889dc25b77a061642b62d94aafae9989197babc254580666e400ce25fb485"
@@ -15,6 +16,8 @@ class Faad2 < Formula
   end
 
   depends_on "cmake" => :build
+  depends_on "pkgconf" => :build
+  depends_on "faac"
 
   deny_network_access!
 
@@ -25,7 +28,21 @@ class Faad2 < Formula
   end
 
   test do
-    output = shell_output("#{bin}/faad -i #{test_fixtures("test.m4a")} 2>&1")
-    assert_match "LC AAC\t0.192 secs, 1 ch, 8000 Hz", output
+    (testpath/"test.c").write <<~C
+      #include <neaacdec.h>
+      int main() {
+        NeAACDecHandle hDecoder = NeAACDecOpen();
+        if (!hDecoder) return 1;
+        NeAACDecClose(hDecoder);
+        return 0;
+      }
+    C
+    system ENV.cc, "test.c", "-I#{include}", "-L#{lib}", "-lfaad", "-o", "test"
+    system "./test"
+
+    if File.exist?(bin/"faad")
+      output = shell_output("#{bin}/faad -i #{test_fixtures("test.m4a")} 2>&1")
+      assert_match "LC AAC\t0.192 secs, 1 ch, 8000 Hz", output
+    end
   end
 end
