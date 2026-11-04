@@ -19,6 +19,7 @@ class Faac < Formula
 
   depends_on "meson" => :build
   depends_on "ninja" => :build
+  depends_on "pkgconf" => :test
 
   def install
     system "meson", "setup", "build", *std_meson_args
@@ -46,7 +47,8 @@ class Faac < Formula
           return 0;
         }
       C
-      system ENV.cc, "test.c", "-I#{include}", "-L#{lib}", "-lfaad3", "-o", "test"
+      flags = shell_output("pkgconf --cflags --libs faad3").chomp.split
+      system ENV.cc, "test.c", "-o", "test", *flags
       system "./test"
     end
   end

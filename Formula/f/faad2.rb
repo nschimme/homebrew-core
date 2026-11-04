@@ -16,7 +16,7 @@ class Faad2 < Formula
   end
 
   depends_on "cmake" => :build
-  depends_on "pkgconf" => :build
+  depends_on "pkgconf" => [:build, :test]
   depends_on "faac"
 
   deny_network_access!
@@ -37,7 +37,8 @@ class Faad2 < Formula
         return 0;
       }
     C
-    system ENV.cc, "test.c", "-I#{include}", "-L#{lib}", "-lfaad", "-o", "test"
+    flags = shell_output("pkgconf --cflags --libs faad2").chomp.split
+    system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
 
     if File.exist?(bin/"faad")
