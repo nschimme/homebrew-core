@@ -44,6 +44,12 @@ class Faad2 < Formula
       int main() {
         NeAACDecHandle hDecoder = NeAACDecOpen();
         if (!hDecoder) return 1;
+        unsigned long samplerate = 0;
+        unsigned char channels = 0;
+        /* ASC for LC AAC, 44100Hz, 2ch: 0x12, 0x10 */
+        unsigned char asc[] = {0x12, 0x10};
+        long res = NeAACDecInit2(hDecoder, asc, sizeof(asc), &samplerate, &channels);
+        if (res < 0 || samplerate != 44100 || channels != 2) return 1;
         NeAACDecClose(hDecoder);
         return 0;
       }

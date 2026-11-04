@@ -28,7 +28,7 @@ class Faac < Formula
   end
 
   test do
-    system bin/"faac", test_fixtures("test.mp3"), "-P", "-o", "test.m4a"
+    system bin/"faac", test_fixtures("test.wav"), "-o", "test.m4a"
     assert_path_exists testpath/"test.m4a"
 
     if build.head?
