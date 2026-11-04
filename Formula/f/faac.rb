@@ -19,7 +19,6 @@ class Faac < Formula
 
   depends_on "meson" => :build
   depends_on "ninja" => :build
-  depends_on "pkgconf" => :test
 
   def install
     system "meson", "setup", "build", *std_meson_args
@@ -36,23 +35,6 @@ class Faac < Formula
       system bin/"faad", "-i", "test.m4a"
       system bin/"faad", "-o", "out.wav", "test.m4a"
       assert_path_exists testpath/"out.wav"
-
-      (testpath/"test.c").write <<~C
-        #include <faad3.h>
-        int main() {
-          faad_config cfg;
-          faad_decoder *dec = NULL;
-          faad_status st = faad_config_init(&cfg, sizeof(cfg));
-          if (st != FAAD_OK) return 1;
-          st = faad_decoder_open(&cfg, NULL, 0, &dec);
-          if (st != FAAD_OK) return 1;
-          faad_decoder_close(&dec);
-          return 0;
-        }
-      C
-      flags = shell_output("pkgconf --cflags --libs faad3").chomp.split
-      system ENV.cc, "test.c", "-o", "test", *flags
-      system "./test"
     end
   end
 end

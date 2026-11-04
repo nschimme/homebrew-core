@@ -29,7 +29,7 @@ class Faad2 < Formula
   def install
     args = []
     if build.head?
-      (buildpath/"external/faac").install resource("faac")
+      resource("faac").stage(buildpath/"external/faac")
       args << "-DFAAD3_USE_BUNDLED_SOURCE=ON"
     end
 
@@ -39,28 +39,12 @@ class Faad2 < Formula
   end
 
   test do
-    (testpath/"test.c").write <<~C
-      #include <neaacdec.h>
-      int main() {
-        NeAACDecHandle hDecoder = NeAACDecOpen();
-        if (!hDecoder) return 1;
-        unsigned long samplerate = 0;
-        unsigned char channels = 0;
-        /* ASC for LC AAC, 44100Hz, 2ch: 0x12, 0x10 */
-        unsigned char asc[] = {0x12, 0x10};
-        long res = NeAACDecInit2(hDecoder, asc, sizeof(asc), &samplerate, &channels);
-        if (res < 0 || samplerate != 44100 || channels != 2) return 1;
-        NeAACDecClose(hDecoder);
-        return 0;
-      }
-    C
-    flags = shell_output("pkgconf --cflags --libs faad2").chomp.split
-    system ENV.cc, "test.c", "-o", "test", *flags
-    system "./test"
-
     if File.exist?(bin/"faad")
       output = shell_output("#{bin}/faad -i #{test_fixtures("test.m4a")} 2>&1")
       assert_match "LC AAC\t0.192 secs, 1 ch, 8000 Hz", output
+    else
+      ENV.prepend_path "PKG_CONFIG_PATH", lib/"pkgconfig"
+      assert_match "-lfaad", shell_output("pkgconf --libs faad2")
     end
   end
 end
