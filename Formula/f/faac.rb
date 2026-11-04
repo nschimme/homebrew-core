@@ -28,13 +28,29 @@ class Faac < Formula
 
   test do
     cp test_fixtures("test.wav"), testpath/"test.wav"
-    system bin/"faac", "test.wav", "-o", "test.m4a"
+    output = shell_output("#{bin}/faac test.wav -o test.m4a 2>&1")
+    assert_match "Freeware Advanced Audio", output
     assert_path_exists testpath/"test.m4a"
 
     if build.head?
-      system bin/"faad", "-i", "test.m4a"
-      system bin/"faad", "-o", "out.wav", "test.m4a"
+      head_output = shell_output("#{bin}/faac -v2 test.wav -o test2.m4a 2>&1")
+      assert_match "Encode Summary", head_output
+      assert_path_exists testpath/"test2.m4a"
+      info = shell_output("#{bin}/faad -i test.m4a 2>&1")
+      assert_match "LC AAC", info
+
+      decode_output = shell_output("#{bin}/faad -v2 -o out.wav test.m4a 2>&1")
+      assert_match "Decode Summary", decode_output
       assert_path_exists testpath/"out.wav"
+
+      faam_output = shell_output("#{bin}/faam info test.m4a")
+      assert_match "ISO BMFF", faam_output
+      assert_match "AAC-LC", faam_output
+
+      faar_output = shell_output("#{bin}/faar -r 48000 -v2 test.wav resampled.wav 2>&1")
+      assert_match "Freeware Advanced Audio Resampler", faar_output
+      assert_match "Completed:", faar_output
+      assert_path_exists testpath/"resampled.wav"
     end
   end
 end
